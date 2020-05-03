@@ -300,6 +300,69 @@ class binance(Exchange):
                     ],
                 },
             },
+            'wsconf': {
+                'conx-tpls': {
+                    'default': {
+                        'type': 'ws-s',
+                        'baseurl': 'wss://stream.binance.com:9443/stream?streams=',
+                    },
+                },
+                'methodmap': {
+                    'fetchOrderBook': 'fetchOrderBook',
+                    '_websocketHandleObRestSnapshot': '_websocket_handle_ob_rest_snapshot',
+                },
+                'events': {
+                    'ob': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@depth@{obinterval}',
+                            'stream2': '{symbol}@depth{obdepth}@{obinterval}',
+                        },
+                    },
+                    'partob': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@depth{obdepth}@{obinterval}',
+                        },
+                    },
+                    'aggtrade': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@aggTrade',
+                        },
+                    },
+                    'trade': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@trade',
+                        },
+                    },
+                    'ohlcv': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@kline_{interval}',
+                        },
+                    },
+                    'ticker': {
+                        'conx-tpl': 'default',
+                        'conx-param': {
+                            'url': '{baseurl}',
+                            'id': '{id}',
+                            'stream': '{symbol}@ticker',
+                        },
+                    },
+                },
+            },
             'fees': {
                 'trading': {
                     'tierBased': False,
@@ -336,15 +399,18 @@ class binance(Exchange):
                 'Rest API trading is not enabled.': ExchangeNotAvailable,
                 "You don't have permission.": PermissionDenied,  # {"msg":"You don't have permission.","success":false}
                 'Market is closed.': ExchangeNotAvailable,  # {"code":-1013,"msg":"Market is closed."}
-                '-1000': ExchangeNotAvailable,  # {"code":-1000,"msg":"An unknown error occured while processing the request."}
-                '-1003': RateLimitExceeded,  # {"code":-1003,"msg":"Too much request weight used, current limit is 1200 request weight per 1 MINUTE. Please use the websocket for live updates to avoid polling the API."}
+                '-1000': ExchangeNotAvailable,
+                # {"code":-1000,"msg":"An unknown error occured while processing the request."}
+                '-1003': RateLimitExceeded,
+                # {"code":-1003,"msg":"Too much request weight used, current limit is 1200 request weight per 1 MINUTE. Please use the websocket for live updates to avoid polling the API."}
                 '-1013': InvalidOrder,  # createOrder -> 'invalid quantity'/'invalid price'/MIN_NOTIONAL
                 '-1021': InvalidNonce,  # 'your time is ahead of server'
                 '-1022': AuthenticationError,  # {"code":-1022,"msg":"Signature for self request is not valid."}
                 '-1100': InvalidOrder,  # createOrder(symbol, 1, asdf) -> 'Illegal characters found in parameter 'price'
                 '-1104': ExchangeError,  # Not all sent parameters were read, read 8 parameters but was sent 9
                 '-1128': ExchangeError,  # {"code":-1128,"msg":"Combination of optional parameters invalid."}
-                '-2010': ExchangeError,  # generic error code for createOrder -> 'Account has insufficient balance for requested action.', {"code":-2010,"msg":"Rest API trading is not enabled."}, etc...
+                '-2010': ExchangeError,
+                # generic error code for createOrder -> 'Account has insufficient balance for requested action.', {"code":-2010,"msg":"Rest API trading is not enabled."}, etc...
                 '-2011': OrderNotFound,  # cancelOrder(1, 'BTC/USDT') -> 'UNKNOWN_ORDER'
                 '-2013': OrderNotFound,  # fetchOrder(1, 'BTC/USDT') -> 'Order does not exist'
                 '-2014': AuthenticationError,  # {"code":-2014, "msg": "API-key format invalid."}
@@ -355,7 +421,8 @@ class binance(Exchange):
     def set_sandbox_mode(self, enabled):
         type = self.safe_string(self.options, 'defaultType', 'spot')
         if type != 'future':
-            raise NotSupported(self.id + ' does not have a sandbox URL for ' + type + " markets, set exchange.options['defaultType'] = 'future' or don't use the sandbox for " + self.id)
+            raise NotSupported(
+                self.id + ' does not have a sandbox URL for ' + type + " markets, set exchange.options['defaultType'] = 'future' or don't use the sandbox for " + self.id)
         return super(binance, self).set_sandbox_mode(enabled)
 
     def nonce(self):
@@ -657,7 +724,8 @@ class binance(Exchange):
             'symbol': market['id'],
         }
         if limit is not None:
-            request['limit'] = limit  # default 100, max 5000, see https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book
+            request[
+                'limit'] = limit  # default 100, max 5000, see https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#order-book
         method = 'publicGetDepth' if market['spot'] else 'fapiPublicGetDepth'
         response = await getattr(self, method)(self.extend(request, params))
         orderbook = self.parse_order_book(response)
@@ -1098,7 +1166,8 @@ class binance(Exchange):
         uppercaseType = type.upper()
         validOrderTypes = self.safe_value(market['info'], 'orderTypes')
         if not self.in_array(uppercaseType, validOrderTypes):
-            raise InvalidOrder(self.id + ' ' + type + ' is not a valid order type in ' + market['type'] + ' market ' + symbol)
+            raise InvalidOrder(
+                self.id + ' ' + type + ' is not a valid order type in ' + market['type'] + ' market ' + symbol)
         request = {
             'symbol': market['id'],
             'type': uppercaseType,
@@ -1108,16 +1177,19 @@ class binance(Exchange):
             quoteOrderQty = self.safe_float(params, 'quoteOrderQty')
             precision = market['precision']['price']
             if quoteOrderQty is not None:
-                request['quoteOrderQty'] = self.decimal_to_precision(quoteOrderQty, TRUNCATE, precision, self.precisionMode)
+                request['quoteOrderQty'] = self.decimal_to_precision(quoteOrderQty, TRUNCATE, precision,
+                                                                     self.precisionMode)
                 params = self.omit(params, 'quoteOrderQty')
             elif price is not None:
-                request['quoteOrderQty'] = self.decimal_to_precision(amount * price, TRUNCATE, precision, self.precisionMode)
+                request['quoteOrderQty'] = self.decimal_to_precision(amount * price, TRUNCATE, precision,
+                                                                     self.precisionMode)
             else:
                 request['quantity'] = self.amount_to_precision(symbol, amount)
         else:
             request['quantity'] = self.amount_to_precision(symbol, amount)
         if market['spot']:
-            request['newOrderRespType'] = self.safe_value(self.options['newOrderRespType'], type, 'RESULT')  # 'ACK' for order id, 'RESULT' for full order or 'FULL' for order with fills
+            request['newOrderRespType'] = self.safe_value(self.options['newOrderRespType'], type,
+                                                          'RESULT')  # 'ACK' for order id, 'RESULT' for full order or 'FULL' for order with fills
         timeInForceIsRequired = False
         priceIsRequired = False
         stopPriceIsRequired = False
@@ -1144,11 +1216,13 @@ class binance(Exchange):
                 raise InvalidOrder(self.id + ' createOrder method requires a price argument for a ' + type + ' order')
             request['price'] = self.price_to_precision(symbol, price)
         if timeInForceIsRequired:
-            request['timeInForce'] = self.options['defaultTimeInForce']  # 'GTC' = Good To Cancel(default), 'IOC' = Immediate Or Cancel
+            request['timeInForce'] = self.options[
+                'defaultTimeInForce']  # 'GTC' = Good To Cancel(default), 'IOC' = Immediate Or Cancel
         if stopPriceIsRequired:
             stopPrice = self.safe_float(params, 'stopPrice')
             if stopPrice is None:
-                raise InvalidOrder(self.id + ' createOrder method requires a stopPrice extra param for a ' + type + ' order')
+                raise InvalidOrder(
+                    self.id + ' createOrder method requires a stopPrice extra param for a ' + type + ' order')
             else:
                 params = self.omit(params, 'stopPrice')
                 request['stopPrice'] = self.price_to_precision(symbol, stopPrice)
@@ -1245,7 +1319,9 @@ class binance(Exchange):
             symbols = self.symbols
             numSymbols = len(symbols)
             fetchOpenOrdersRateLimit = int(numSymbols / 2)
-            raise ExchangeError(self.id + ' fetchOpenOrders WARNING: fetching open orders without specifying a symbol is rate-limited to one call per ' + str(fetchOpenOrdersRateLimit) + ' seconds. Do not call self method frequently to avoid ban. Set ' + self.id + '.options["warnOnFetchOpenOrdersWithoutSymbol"] = False to suppress self warning message.')
+            raise ExchangeError(
+                self.id + ' fetchOpenOrders WARNING: fetching open orders without specifying a symbol is rate-limited to one call per ' + str(
+                    fetchOpenOrdersRateLimit) + ' seconds. Do not call self method frequently to avoid ban. Set ' + self.id + '.options["warnOnFetchOpenOrdersWithoutSymbol"] = False to suppress self warning message.')
         else:
             defaultType = self.safe_string_2(self.options, 'fetchOpenOrders', 'defaultType', 'spot')
             type = self.safe_string(params, 'type', defaultType)
@@ -1608,7 +1684,8 @@ class binance(Exchange):
         response = await self.wapiGetDepositAddress(self.extend(request, params))
         success = self.safe_value(response, 'success')
         if (success is None) or not success:
-            raise InvalidAddress(self.id + ' fetchDepositAddress returned an empty response – create the deposit address in the user settings first.')
+            raise InvalidAddress(
+                self.id + ' fetchDepositAddress returned an empty response – create the deposit address in the user settings first.')
         address = self.safe_string(response, 'address')
         tag = self.safe_string(response, 'addressTag')
         self.check_address(address)
@@ -1766,7 +1843,8 @@ class binance(Exchange):
                 }
             else:
                 raise AuthenticationError(self.id + ' userDataStream endpoint requires `apiKey` credential')
-        if (api == 'private') or (api == 'sapi') or (api == 'wapi' and path != 'systemStatus') or (api == 'fapiPrivate'):
+        if (api == 'private') or (api == 'sapi') or (api == 'wapi' and path != 'systemStatus') or (
+                api == 'fapiPrivate'):
             self.check_required_credentials()
             query = None
             if (api == 'sapi') and (path == 'asset/dust'):
@@ -1815,7 +1893,8 @@ class binance(Exchange):
             if body.find('LOT_SIZE') >= 0:
                 raise InvalidOrder(self.id + ' order amount should be evenly divisible by lot size ' + body)
             if body.find('PRICE_FILTER') >= 0:
-                raise InvalidOrder(self.id + ' order price is invalid, i.e. exceeds allowed price precision, exceeds min price or max price limits or is invalid float value in general, use self.price_to_precision(symbol, amount) ' + body)
+                raise InvalidOrder(
+                    self.id + ' order price is invalid, i.e. exceeds allowed price precision, exceeds min price or max price limits or is invalid float value in general, use self.price_to_precision(symbol, amount) ' + body)
         if len(body) > 0:
             if body[0] == '{':
                 # check success value for wapi endpoints
@@ -1858,3 +1937,228 @@ class binance(Exchange):
         if (api == 'private') or (api == 'wapi'):
             self.options['hasAlreadyAuthenticatedSuccessfully'] = True
         return response
+
+    def _websocket_on_message(self, contextId, data):
+        msg = json.loads(data)
+        stream = self.safe_string(msg, 'stream')
+        resData = self.safe_value(msg, 'data', {})
+        parts = stream.split('@')
+        partsLen = len(parts)
+        if partsLen >= 2:
+            msgType = parts[1]
+            if msgType == 'depth':
+                self._websocket_handle_ob(contextId, resData)
+            elif msgType.find('depth') >= 0:
+                symbol = self._websocket_find_symbol(parts[0])
+                self._websocket_handle_partial_ob(contextId, symbol, resData)
+            elif msgType == 'trade':
+                self._websocket_handle_trade(contextId, resData)
+            elif msgType == 'aggTrade':
+                self._websocket_handle_trade(contextId, resData)
+            elif msgType.find('kline') >= 0:
+                self._websocket_handle_kline(contextId, resData)
+            elif msgType == 'ticker':
+                self._websocket_handle_ticker(contextId, resData)
+
+    def _websocket_handle_ob(self, contextId, data):
+        symbol = self._websocket_find_symbol(self.safe_string(data, 's'))
+        # if asyncContext has no previous orderbook you have to cache all deltas
+        # and fetch orderbook from rest api
+        symbolData = self._contextGetSymbolData(contextId, 'ob', symbol)
+        if not ('ob' in symbolData):
+            if not ('deltas' in symbolData):
+                symbolData['deltas'] = []
+            deltas = symbolData['deltas']
+            partsLen = len(deltas)
+            if partsLen > 50:
+                if not ('failCount' in symbolData):
+                    symbolData['failCount'] = 0
+                symbolData['failCount'] = symbolData['failCount'] + 1
+                if symbolData['failCount'] > 5:
+                    self.emit('err', ExchangeError(self.id + ': max deltas failCount reached for symbol ' + symbol))
+                    self.websocketClose(contextId)
+                else:
+                    # Launch again
+                    symbolData = self.omit(symbolData, 'ob')
+                    symbolData = self.omit(symbolData, 'deltas')
+                self._contextSetSymbolData(contextId, 'ob', symbol, symbolData)
+            else:
+                symbolData['deltas'].append(data)
+                if not ('snaplaunched' in symbolData):
+                    symbolData['snaplaunched'] = True
+                    self._executeAndCallback(contextId, self._websocketMethodMap('fetchOrderBook'), [symbol],
+                                             self._websocketMethodMap('_websocketHandleObRestSnapshot'), {
+                                                 'symbol': symbol,
+                                                 'contextId': contextId,
+                                             })
+                self._contextSetSymbolData(contextId, 'ob', symbol, symbolData)
+        else:
+            config = self._contextGet(contextId, 'config')
+            symbolData['ob'] = self.mergeOrderBookDelta(symbolData['ob'], data, data['E'], 'b', 'a')
+            if config is not None:
+                self.emit('ob', symbol, self._cloneOrderBook(symbolData['ob'], config['ob'][symbol]['limit']))
+            else:
+                self.emit('ob', symbol, self._cloneOrderBook(symbolData['ob']))
+            self._contextSetSymbolData(contextId, 'ob', symbol, symbolData)
+
+    def _websocket_handle_partial_ob(self, contextId, symbol, data):
+        orderbook = self.parse_order_book(data)
+        orderbook['nonce'] = self.safe_integer(data, 'lastUpdateId')
+        self.emit('partob', symbol, orderbook)
+
+    def _websocket_handle_trade(self, contextId, data):
+        symbol = self._websocket_find_symbol(self.safe_string(data, 's'))
+        market = self.market(symbol)
+        trade = self.parse_trade(data, market)
+        self.emit('trade', symbol, trade)
+
+    def _websocket_handle_kline(self, contextId, data):
+        symbol = self._websocket_find_symbol(self.safe_string(data, 's'))
+        market = self.market(symbol)
+        kline = self.parse_ohlcv([
+            self.safe_float(data['k'], 't'),
+            self.safe_float(data['k'], 'o'),
+            self.safe_float(data['k'], 'c'),
+            self.safe_float(data['k'], 'h'),
+            self.safe_float(data['k'], 'l'),
+            self.safe_float(data['k'], 'v'),
+        ], market, self.safe_float(data, 'i'))
+        self.emit('ohlcv', symbol, kline)
+
+    def _websocket_handle_ticker(self, contextId, data):
+        symbol = self._websocket_find_symbol(self.safe_string(data, 's'))
+        market = self.market(symbol)
+        ticker = self.parse_ticker({
+            'symbol': self.safe_string(data, 's'),
+            'priceChange': self.safe_string(data, 'p'),
+            'priceChangePercent': self.safe_string(data, 'P'),
+            'weightedAvgPrice': self.safe_string(data, 'v'),
+            'prevClosePrice': self.safe_string(data, 'x'),
+            'lastPrice': self.safe_string(data, 'c'),
+            'lastQty': self.safe_string(data, 'Q'),
+            'bidPrice': self.safe_string(data, 'b'),
+            'askPrice': self.safe_string(data, 'a'),
+            'openPrice': self.safe_string(data, 'o'),
+            'highPrice': self.safe_string(data, 'h'),
+            'lowPrice': self.safe_string(data, 'l'),
+            'volume': self.safe_string(data, 'v'),
+            'quoteVolume': self.safe_string(data, 'q'),
+            'openTime': self.safe_string(data, 'O'),
+            'closeTime': self.safe_string(data, 'C'),
+            'firstId': self.safe_string(data, 'F'),  # First tradeId
+            'lastId': self.safe_string(data, 'L'),  # Last tradeId
+            'count': self.safe_string(data, 'n'),  # Trade count
+        }, market)
+        ticker['info'] = data
+        self.emit('ticker', symbol, ticker)
+
+    def _websocket_handle_ob_rest_snapshot(self, context, error, response):
+        symbol = context['symbol']
+        contextId = context['contextId']
+        data = self._contextGetSymbolData(contextId, 'ob', symbol)
+        config = self._contextGet(contextId, 'config')
+        # print('order book snapshot returned for '+ symbol)
+        if not error:
+            lastUpdateId = self.safe_integer(response, 'nonce')
+            deltas = data['deltas']
+            index = 0
+            for index in range(0, len(deltas)):
+                delta = deltas[index]
+                U = self.safe_integer(delta, 'U')
+                u = self.safe_integer(delta, 'u')
+                if u <= lastUpdateId:
+                    continue
+                if (U <= lastUpdateId + 1) and (u >= lastUpdateId + 1):
+                    break
+                self.emit('err', ExchangeError(self.id + ': error in update ids in deltas for ' + symbol))
+                self.websocketClose(contextId)
+                return
+            # process orderbook
+            for i in range(index, len(deltas)):
+                delta = deltas[i]
+                self.mergeOrderBookDelta(response, delta, None, 'b', 'a')
+            data['ob'] = response
+            data['deltas'] = []
+            if config is not None:
+                self.emit('ob', symbol, self._cloneOrderBook(response, config['ob'][symbol]['limit']))
+            else:
+                self.emit('ob', symbol, self._cloneOrderBook(response))
+            self._contextSetSymbolData(contextId, 'ob', symbol, data)
+
+    def _websocket_subscribe(self, contextId, event, symbol, nonce, params={}):
+        if event != 'ob' and event != 'trade' and event != 'ohlcv' and event != 'ticker' and event != 'partob':
+            raise NotSupported('subscribe ' + event + '(' + symbol + ') not supported for exchange ' + self.id)
+        if event == 'ob':
+            config = self._contextGet(contextId, 'config')
+            if config is None:
+                config = {}
+            newConfig = {
+                'ob': {},
+            }
+            newConfig['ob'][symbol] = {
+                'limit': self.safe_integer(params, 'limit', None),
+            }
+            config = self.deep_extend(config, newConfig)
+            self._contextSet(contextId, 'config', config)
+        nonceStr = str(nonce)
+        self.emit(nonceStr, True)
+
+    def _websocket_unsubscribe(self, contextId, event, symbol, nonce, params={}):
+        if event != 'ob' and event != 'trade' and event != 'ohlcv' and event != 'ticker' and event != 'partob':
+            raise NotSupported('unsubscribe ' + event + '(' + symbol + ') not supported for exchange ' + self.id)
+        nonceStr = str(nonce)
+        self.emit(nonceStr, True)
+
+    def _websocket_on_open(self, contextId, websocketConexConfig):
+        url = websocketConexConfig['url']
+        parts = url.split('=')
+        partsLen = len(parts)
+        if partsLen > 1:
+            streams = parts[1]
+            streams = streams.split('/')
+            for i in range(0, len(streams)):
+                stream = streams[i]
+                pair = stream.split('@')
+                partsLen = len(pair)
+                if partsLen >= 2:
+                    event = pair[1].lower()
+                    if event == 'depth':
+                        event = 'ob'
+                    elif event.find('depth') >= 0:
+                        event = 'partob'
+                    elif event == 'trade':
+                        event = 'trade'
+                    elif event == 'aggtrade':
+                        event = 'aggtrade'
+                    elif event.find('ohlcv') >= 0:
+                        event = 'kline'
+                    elif event.find('24hrTicker') >= 0:
+                        event = 'ticker'
+                    # self._contextSetSubscribed(contextId, event, symbol, True)
+                    # self._contextSetSubscribing(contextId, event, symbol, False)
+
+    def _websocket_generate_url_stream(self, events, options, params={}):
+        streamList = []
+        for i in range(0, len(events)):
+            element = events[i]
+            parameters = self.extend({
+                'event': element['event'],
+                'symbol': self._websocket_market_id(element['symbol']),
+                'interval': self.safe_string(params, 'timeframe', '1m'),
+                'obdepth': self.safe_string(params, 'obdepth', '20'),
+                'obinterval': self.safe_string(params, 'obinterval', '1000ms'),
+            }, params)
+            streamGenerator = self.wsconf['events'][element['event']]['conx-param']['stream']
+            streamList.append(self.implode_params(streamGenerator, parameters))
+        stream = '/'.join(streamList)
+        # console.log(options['url'] + stream)
+        return options['url'] + stream
+
+    def _websocket_market_id(self, symbol):
+        return self.market_id(symbol).lower()
+
+    def _get_current_websocket_orderbook(self, contextId, symbol, limit):
+        data = self._contextGetSymbolData(contextId, 'ob', symbol)
+        if ('ob' in data) and (data['ob'] is not None):
+            return self._cloneOrderBook(data['ob'], limit)
+        return None

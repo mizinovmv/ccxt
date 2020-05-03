@@ -73,7 +73,9 @@ setup(
         'setuptools>=38.5.1',
         'certifi>=2018.1.18',
         'requests>=2.18.4',
-        'cryptography>=2.6.1'
+        'cryptography>=2.6.1',
+        'autobahn>=18.6.1',
+        'pyee>=7.0.1',
     ],
 
     extras_require={
