@@ -6,6 +6,7 @@
 from ccxt.async_support.base.exchange import Exchange
 import math
 import json
+import time
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import PermissionDenied
@@ -2002,7 +2003,7 @@ class binance(Exchange):
             self._contextSetSymbolData(contextId, 'ob', symbol, symbolData)
 
     def _websocket_handle_partial_ob(self, contextId, symbol, data):
-        orderbook = self.parse_order_book(data)
+        orderbook = self.parse_order_book(data, timestamp=self.milliseconds())
         orderbook['nonce'] = self.safe_integer(data, 'lastUpdateId')
         self.emit('partob', symbol, orderbook)
 
