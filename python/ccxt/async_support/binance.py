@@ -1949,7 +1949,7 @@ class binance(Exchange):
             if msgType == 'depth':
                 self._websocket_handle_ob(contextId, resData)
             elif msgType.find('depth') >= 0:
-                symbol = self._websocket_find_symbol(parts[0])
+                symbol = self._websocket_find_symbol(parts[0].upper())
                 self._websocket_handle_partial_ob(contextId, symbol, resData)
             elif msgType == 'trade':
                 self._websocket_handle_trade(contextId, resData)
